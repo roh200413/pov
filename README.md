@@ -40,7 +40,20 @@ npm run dev -- --host 0.0.0.0 --port 5173
 - Backend
   - FastAPI 앱 부팅
   - CORS 설정
-  - SQLAlchemy + SQLite 연결 준비
+  - SQLAlchemy + SQLite 연결
+  - Step 1 DB 스키마(`projects`, `datasets`, `dataset_files`, `models`, `inference_runs`, `inference_results`, `validations`)
+  - 서버 시작 시 기본 모델 3종 seed
+    - Dummy Vision v1 (`vision`, `dummy`)
+    - Dummy Timeseries v1 (`timeseries`, `dummy`)
+    - Dummy Mixed v1 (`mixed`, `dummy`)
+  - Step 2 업로드 API
+    - `POST /api/projects`
+    - `POST /api/projects/{project_id}/datasets`
+    - `POST /api/datasets/{dataset_id}/files` (multipart 다중 파일)
+  - Step 3 모델 조회 API
+    - `GET /api/models?modality=vision|timeseries|mixed`
+  - 업로드 파일 저장 경로: `storage/{project_id}/datasets/{dataset_id}/raw/...`
+  - `/static`으로 `storage/` 정적 서빙
   - `/health` 엔드포인트
 - Frontend
   - Vite + React + TypeScript 구성
@@ -48,9 +61,35 @@ npm run dev -- --host 0.0.0.0 --port 5173
   - 좌측 사이드바 + 메인 레이아웃
   - `VITE_API_BASE_URL` 환경 변수 분리
 
+## 최소 스모크 테스트
+
+```bash
+cd backend
+python -m compileall app
+```
+
+서버 실행 후 예시 흐름:
+
+```bash
+# 1) 프로젝트 생성
+curl -X POST http://localhost:8000/api/projects \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"demo-project","description":"poc"}'
+
+# 2) 데이터셋 생성
+curl -X POST http://localhost:8000/api/projects/{project_id}/datasets \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"demo-dataset","dataset_type":"vision"}'
+
+# 3) 파일 업로드
+curl -X POST http://localhost:8000/api/datasets/{dataset_id}/files \
+  -F 'files=@./sample.png' \
+  -F 'files=@./sample.csv'
+```
+
+응답에는 `static_url`이 포함되어 `/static/...` 경로로 미리보기 가능합니다.
+
 ## 다음 단계(예정)
 
-1. 프로젝트/데이터셋/모델/런/결과 검증 DB 스키마 추가
-2. 로컬 스토리지 경로 규칙(`storage/{project_id}/...`) 구현
-3. Adapter/Plugin 기반 Dummy 추론 파이프라인 구현
-4. 위저드 각 단계 API 연동 및 End-to-End 완료
+1. Adapter/Plugin 기반 Dummy 추론 파이프라인 구현
+2. Step 4/5 API + UI 연동 및 End-to-End 완료

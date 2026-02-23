@@ -51,3 +51,54 @@ section {
   padding: 1.5rem;
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
 }
+
+.step3-wrap {
+  display: grid;
+  gap: 1rem;
+}
+
+.modality-tabs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.modality-tab {
+  border: 1px solid #d1d5db;
+  background: #fff;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+}
+
+.modality-tab.active {
+  background: #111827;
+  color: #fff;
+}
+
+.model-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+.model-card {
+  text-align: left;
+  border: 1px solid #d1d5db;
+  border-radius: 0.75rem;
+  padding: 0.9rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+.model-card.selected {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.error-text {
+  color: #dc2626;
+}
+
+.selected-model {
+  font-weight: 600;
+}
