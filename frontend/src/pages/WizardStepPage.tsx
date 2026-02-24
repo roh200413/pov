@@ -2,14 +2,6 @@ import { ChangeEvent, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 
-type ModelItem = {
-  id: string
-  name: string
-  task_type: 'vision' | 'timeseries' | 'mixed'
-  backend: string
-  version: string
-}
-
 type Props = {
   selectedProjectId: string
   onProjectUpdated: () => void
