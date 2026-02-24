@@ -1,3 +1,18 @@
+# IDE
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+
+# Local DB / artifacts
+*.db
+poc.db
+
+# Node
+frontend/node_modules/
+frontend/package-lock.json
+
 frontend/node_modules/
 frontend/tsconfig.tsbuildinfo
 backend/.venv/
