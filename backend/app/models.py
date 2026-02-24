@@ -75,6 +75,9 @@ class InferenceRun(Base):
     dataset_id: Mapped[str] = mapped_column(ForeignKey("datasets.id", ondelete="CASCADE"), nullable=False, index=True)
     model_id: Mapped[str] = mapped_column(ForeignKey("models.id"), nullable=False, index=True)
     status: Mapped[str] = mapped_column(String(30), nullable=False, default="queued")
+    params_json: Mapped[dict | None] = mapped_column(JSON)
+    summary_json: Mapped[dict | None] = mapped_column(JSON)
+    error_message: Mapped[str | None] = mapped_column(Text)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -83,6 +86,7 @@ class InferenceRun(Base):
     dataset: Mapped[Dataset] = relationship(back_populates="inference_runs")
     model: Mapped[Model] = relationship(back_populates="inference_runs")
     results: Mapped[list[InferenceResult]] = relationship(back_populates="run", cascade="all, delete-orphan")
+    validations: Mapped[list[Validation]] = relationship(back_populates="run", cascade="all, delete-orphan")
 
 
 class InferenceResult(Base):
@@ -90,23 +94,25 @@ class InferenceResult(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
     run_id: Mapped[str] = mapped_column(ForeignKey("inference_runs.id", ondelete="CASCADE"), nullable=False, index=True)
-    output_path: Mapped[str | None] = mapped_column(String(1024))
-    summary: Mapped[dict | None] = mapped_column(JSON)
+    sample_key: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     score: Mapped[float | None] = mapped_column(Float)
+    verdict: Mapped[str | None] = mapped_column(String(50))
+    output_path: Mapped[str | None] = mapped_column(String(1024))
+    detail_json: Mapped[dict | None] = mapped_column(JSON)
+    summary: Mapped[dict | None] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     run: Mapped[InferenceRun] = relationship(back_populates="results")
-    validations: Mapped[list[Validation]] = relationship(back_populates="result", cascade="all, delete-orphan")
 
 
 class Validation(Base):
     __tablename__ = "validations"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_str)
-    result_id: Mapped[str] = mapped_column(ForeignKey("inference_results.id", ondelete="CASCADE"), nullable=False, index=True)
-    reviewer: Mapped[str | None] = mapped_column(String(255))
-    status: Mapped[str] = mapped_column(String(30), nullable=False, default="pending")
-    notes: Mapped[str | None] = mapped_column(Text)
+    run_id: Mapped[str] = mapped_column(ForeignKey("inference_runs.id", ondelete="CASCADE"), nullable=False, index=True)
+    sample_key: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    human_verdict: Mapped[str] = mapped_column(String(30), nullable=False)
+    comment: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
-    result: Mapped[InferenceResult] = relationship(back_populates="validations")
+    run: Mapped[InferenceRun] = relationship(back_populates="validations")
