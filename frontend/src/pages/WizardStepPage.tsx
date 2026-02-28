@@ -7,8 +7,9 @@ type Props = {
   onProjectUpdated: () => void
 }
 
-type Dataset = { id: string; name: string; dataset_type: string }
-type ModelItem = { id: string; name: string; task_type: 'vision' | 'timeseries' | 'mixed'; backend: string; version: string }
+type DatasetType = 'vision' | 'timeseries' | 'mixed'
+type Dataset = { id: string; name: string; dataset_type: DatasetType }
+type ModelItem = { id: string; name: string; task_type: DatasetType; backend: string; version: string }
 type RunItem = { id: string; status: string; summary_json?: { total?: number } }
 type ResultItem = {
   id: string
@@ -21,17 +22,16 @@ type ResultItem = {
 type ValidationItem = { id: string; sample_key: string; human_verdict: string; comment?: string }
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
-
-const stepOrder = ['step-1', 'step-2', 'step-3', 'step-4', 'step-5']
+const stepOrder = ['step-1', 'step-2', 'step-3', 'step-4', 'step-5'] as const
 
 export function WizardStepPage({ selectedProjectId, onProjectUpdated }: Props) {
   const { stepId = 'step-1' } = useParams()
   const [datasetName, setDatasetName] = useState('default-dataset')
-  const [datasetType, setDatasetType] = useState<'vision' | 'timeseries' | 'mixed'>('vision')
+  const [datasetType, setDatasetType] = useState<DatasetType>('vision')
   const [datasets, setDatasets] = useState<Dataset[]>([])
   const [selectedDatasetId, setSelectedDatasetId] = useState(localStorage.getItem('datasetId') ?? '')
   const [selectedModelId, setSelectedModelId] = useState(localStorage.getItem('selectedModelId') ?? '')
-  const [modality, setModality] = useState<'vision' | 'timeseries' | 'mixed'>('vision')
+  const [modality, setModality] = useState<DatasetType>('vision')
   const [models, setModels] = useState<ModelItem[]>([])
   const [runId, setRunId] = useState(localStorage.getItem('runId') ?? '')
   const [run, setRun] = useState<RunItem | null>(null)
@@ -40,25 +40,45 @@ export function WizardStepPage({ selectedProjectId, onProjectUpdated }: Props) {
   const [selectedResult, setSelectedResult] = useState<ResultItem | null>(null)
   const [comment, setComment] = useState('')
   const [humanVerdict, setHumanVerdict] = useState<'ok' | 'ng'>('ok')
+  const [hasUploadedFiles, setHasUploadedFiles] = useState(false)
 
   const selectedDataset = datasets.find((d) => d.id === selectedDatasetId)
 
   useEffect(() => {
     if (!selectedProjectId) {
+      setDatasets([])
       return
     }
+
     fetch(`${API_BASE}/api/projects/${selectedProjectId}/datasets`)
       .then((r) => (r.ok ? r.json() : []))
       .then((rows: Dataset[]) => {
         setDatasets(rows)
+
+        const selectedExists = rows.some((row) => row.id === selectedDatasetId)
+        if (selectedDatasetId && !selectedExists) {
+          setSelectedDatasetId('')
+          localStorage.removeItem('datasetId')
+          setHasUploadedFiles(false)
+        }
+
         if (!selectedDatasetId && rows[0]) {
           setSelectedDatasetId(rows[0].id)
           localStorage.setItem('datasetId', rows[0].id)
-          setModality(rows[0].dataset_type as 'vision' | 'timeseries' | 'mixed')
+          setModality(rows[0].dataset_type)
         }
       })
       .catch(() => setDatasets([]))
-  }, [selectedProjectId, selectedDatasetId])
+  }, [selectedProjectId])
+
+  useEffect(() => {
+    if (!selectedDataset) {
+      return
+    }
+    setModality(selectedDataset.dataset_type)
+    setSelectedModelId('')
+    localStorage.removeItem('selectedModelId')
+  }, [selectedDataset])
 
   useEffect(() => {
     fetch(`${API_BASE}/api/models?modality=${modality}`)
@@ -68,32 +88,44 @@ export function WizardStepPage({ selectedProjectId, onProjectUpdated }: Props) {
   }, [modality])
 
   useEffect(() => {
-    if (!runId) return
-    fetch(`${API_BASE}/api/inference-runs/${runId}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((row: RunItem | null) => setRun(row))
-      .catch(() => setRun(null))
+    if (!runId) {
+      setRun(null)
+      setResults([])
+      setValidations([])
+      return
+    }
 
-    fetch(`${API_BASE}/api/inference-runs/${runId}/results?limit=200&offset=0`)
-      .then((r) => (r.ok ? r.json() : []))
-      .then((rows: ResultItem[]) => setResults(rows))
-      .catch(() => setResults([]))
+    const loadRun = () => {
+      fetch(`${API_BASE}/api/inference-runs/${runId}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((row: RunItem | null) => setRun(row))
+        .catch(() => setRun(null))
 
-    fetch(`${API_BASE}/api/inference-runs/${runId}/validations`)
-      .then((r) => (r.ok ? r.json() : []))
-      .then((rows: ValidationItem[]) => setValidations(rows))
-      .catch(() => setValidations([]))
+      fetch(`${API_BASE}/api/inference-runs/${runId}/results?limit=200&offset=0`)
+        .then((r) => (r.ok ? r.json() : []))
+        .then((rows: ResultItem[]) => setResults(rows))
+        .catch(() => setResults([]))
+
+      fetch(`${API_BASE}/api/inference-runs/${runId}/validations`)
+        .then((r) => (r.ok ? r.json() : []))
+        .then((rows: ValidationItem[]) => setValidations(rows))
+        .catch(() => setValidations([]))
+    }
+
+    loadRun()
+    const timer = window.setInterval(loadRun, 2000)
+    return () => window.clearInterval(timer)
   }, [runId])
 
   const completed = {
     'step-1': Boolean(selectedProjectId),
-    'step-2': Boolean(selectedDatasetId),
+    'step-2': Boolean(selectedDatasetId && hasUploadedFiles),
     'step-3': Boolean(selectedModelId),
     'step-4': Boolean(runId && run?.status === 'done'),
     'step-5': validations.length > 0,
   }
 
-  const currentStepIndex = stepOrder.indexOf(stepId)
+  const currentStepIndex = Math.max(stepOrder.indexOf(stepId as (typeof stepOrder)[number]), 0)
   const nextStep = stepOrder[currentStepIndex + 1]
   const canGoNext = nextStep ? completed[stepId as keyof typeof completed] : false
   const progressCount = Object.values(completed).filter(Boolean).length
@@ -119,7 +151,8 @@ export function WizardStepPage({ selectedProjectId, onProjectUpdated }: Props) {
       .then((dataset: Dataset) => {
         setSelectedDatasetId(dataset.id)
         localStorage.setItem('datasetId', dataset.id)
-        setModality(dataset.dataset_type as 'vision' | 'timeseries' | 'mixed')
+        setModality(dataset.dataset_type)
+        setHasUploadedFiles(false)
       })
   }
 
@@ -127,7 +160,9 @@ export function WizardStepPage({ selectedProjectId, onProjectUpdated }: Props) {
     if (!selectedDatasetId || !e.target.files?.length) return
     const formData = new FormData()
     Array.from(e.target.files).forEach((file) => formData.append('files', file))
-    fetch(`${API_BASE}/api/datasets/${selectedDatasetId}/files`, { method: 'POST', body: formData })
+    fetch(`${API_BASE}/api/datasets/${selectedDatasetId}/files`, { method: 'POST', body: formData }).then(() => {
+      setHasUploadedFiles(true)
+    })
   }
 
   const handleSelectModel = (modelId: string) => {
@@ -184,7 +219,9 @@ export function WizardStepPage({ selectedProjectId, onProjectUpdated }: Props) {
       {stepId === 'step-1' && (
         <div className="step3-wrap">
           <p>프로젝트를 선택하거나 새로 생성하세요.</p>
-          <button type="button" onClick={handleCreateProject}>프로젝트 생성</button>
+          <button type="button" onClick={handleCreateProject}>
+            프로젝트 생성
+          </button>
           <p>현재 프로젝트: {selectedProjectId || '-'}</p>
         </div>
       )}
@@ -192,7 +229,7 @@ export function WizardStepPage({ selectedProjectId, onProjectUpdated }: Props) {
       {stepId === 'step-2' && (
         <div className="step3-wrap">
           <input value={datasetName} onChange={(e) => setDatasetName(e.target.value)} placeholder="dataset name" />
-          <select value={datasetType} onChange={(e) => setDatasetType(e.target.value as 'vision' | 'timeseries' | 'mixed')}>
+          <select value={datasetType} onChange={(e) => setDatasetType(e.target.value as DatasetType)}>
             <option value="vision">vision</option>
             <option value="timeseries">timeseries</option>
             <option value="mixed">mixed</option>
@@ -205,6 +242,7 @@ export function WizardStepPage({ selectedProjectId, onProjectUpdated }: Props) {
             onChange={(e) => {
               setSelectedDatasetId(e.target.value)
               localStorage.setItem('datasetId', e.target.value)
+              setHasUploadedFiles(false)
             }}
           >
             <option value="">데이터셋 선택</option>
