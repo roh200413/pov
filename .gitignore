@@ -1,0 +1,6 @@
+frontend/node_modules/
+frontend/tsconfig.tsbuildinfo
+backend/.venv/
+backend/poc.db
+storage/
+frontend/dist/

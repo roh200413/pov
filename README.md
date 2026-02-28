@@ -1,11 +1,13 @@
 # PoC AI Inference Tool
 
-`PoC AI 추론 툴`의 Step 0 스캐폴딩입니다.
+5단계 위저드 기반 PoC AI 추론 툴입니다.
+
+1) 프로젝트 생성 → 2) 데이터셋 업데이트 → 3) 모델 선택 → 4) 모델 추론 → 5) 결과 검증
 
 ## Monorepo 구조
 
-- `backend/`: FastAPI + SQLAlchemy + SQLite 기반 API 서버
-- `frontend/`: React + Vite + TypeScript 기반 UI
+- `backend/`: FastAPI + SQLAlchemy + SQLite
+- `frontend/`: React + Vite + TypeScript
 
 ## Backend 실행
 
@@ -14,14 +16,8 @@ cd backend
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env  # 필요 시 값 수정
+cp .env.example .env
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-확인:
-
-```bash
-curl http://localhost:8000/health
 ```
 
 ## Frontend 실행
@@ -29,28 +25,70 @@ curl http://localhost:8000/health
 ```bash
 cd frontend
 npm install
-cp .env.example .env  # 필요 시 API 주소 수정
+cp .env.example .env
 npm run dev -- --host 0.0.0.0 --port 5173
 ```
 
-브라우저에서 `http://localhost:5173` 접속 후 5단계 위저드 라우트를 확인할 수 있습니다.
+## 구현된 API
 
-## 현재 포함된 최소 구성
+- Projects / Datasets / Upload
+  - `GET /api/projects`
+  - `POST /api/projects`
+  - `GET /api/projects/{project_id}/datasets`
+  - `POST /api/projects/{project_id}/datasets`
+  - `POST /api/datasets/{dataset_id}/files`
+- Models
+  - `GET /api/models?modality=vision|timeseries|mixed`
+- Inference Runs
+  - `POST /api/inference-runs`
+  - `GET /api/inference-runs/{run_id}`
+  - `GET /api/inference-runs/{run_id}/results?limit=&offset=`
+- Validations
+  - `POST /api/validations`
+  - `GET /api/inference-runs/{run_id}/validations`
 
-- Backend
-  - FastAPI 앱 부팅
-  - CORS 설정
-  - SQLAlchemy + SQLite 연결 준비
-  - `/health` 엔드포인트
-- Frontend
-  - Vite + React + TypeScript 구성
-  - `react-router-dom` 기반 위저드 라우팅 뼈대
-  - 좌측 사이드바 + 메인 레이아웃
-  - `VITE_API_BASE_URL` 환경 변수 분리
+## 저장 경로 규칙
 
-## 다음 단계(예정)
+- 업로드 원본: `storage/{project_id}/datasets/{dataset_id}/raw/...`
+- 추론 출력: `storage/{project_id}/runs/{run_id}/outputs/...`
+- 정적 서빙: `/static` → `storage/`
 
-1. 프로젝트/데이터셋/모델/런/결과 검증 DB 스키마 추가
-2. 로컬 스토리지 경로 규칙(`storage/{project_id}/...`) 구현
-3. Adapter/Plugin 기반 Dummy 추론 파이프라인 구현
-4. 위저드 각 단계 API 연동 및 End-to-End 완료
+## Adapter 구조
+
+- `backend/app/inference/adapters/base.py`
+- `backend/app/inference/adapters/dummy_vision.py`
+- `backend/app/inference/adapters/dummy_timeseries.py`
+- `backend/app/inference/adapter_registry.py`
+
+모델의 `backend + task_type` 기준으로 adapter를 선택하고, Run 상태는
+`queued -> running -> done/failed` 로 전환됩니다.
+
+## End-to-End 사용 시나리오
+
+1. Step 1에서 프로젝트 생성 (좌측 사이드바에서도 생성 가능)
+2. Step 2에서 데이터셋 생성 후 파일 업로드
+3. Step 3에서 modality 탭으로 모델 조회 후 카드 선택
+4. Step 4에서 추론 실행 → run 상태 및 summary 확인
+5. Step 5에서 결과 테이블 조회/상세 확인 후 OK/NG + 코멘트 저장
+   - 검증률 = 검증 완료 sample 수 / 전체 결과 수
+
+## Backend 스모크 테스트
+
+> 서버(`uvicorn app.main:app`)를 먼저 띄운 뒤 실행
+
+```bash
+cd backend
+python scripts/smoke_test.py
+```
+
+검증 순서:
+
+- 프로젝트 생성
+- 데이터셋 생성
+- CSV 업로드
+- 모델 조회
+- 추론 run 생성
+- run 완료 polling
+- 결과 조회
+
+실패 시 `[smoke] FAILED: ...` 로그로 원인을 출력합니다.
