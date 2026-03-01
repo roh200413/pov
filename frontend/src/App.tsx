@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { Layout } from './components/Layout'
+import { ProjectManagementPage } from './pages/ProjectManagementPage'
 import { WizardStepPage } from './pages/WizardStepPage'
 
 const steps = ['1) 프로젝트 생성', '2) 데이터셋 업데이트', '3) 모델 선택', '4) 모델 추론', '5) 결과 검증']
@@ -13,7 +14,7 @@ export default function App() {
   const [selectedProjectId, setSelectedProjectId] = useState(localStorage.getItem('projectId') ?? '')
 
   const loadProjects = () => {
-    fetch(`${API_BASE}/api/projects`)
+    return fetch(`${API_BASE}/api/projects`)
       .then((r) => (r.ok ? r.json() : []))
       .then((rows: ProjectItem[]) => {
         setProjects(rows)
@@ -35,23 +36,24 @@ export default function App() {
     localStorage.setItem('projectId', projectId)
   }
 
-  const handleCreateProject = () => {
-    const name = window.prompt('새 프로젝트 이름을 입력하세요')
-    if (!name) {
+  const handleCreateProject = async (name?: string) => {
+    const resolvedName = name?.trim() || window.prompt('새 프로젝트 이름을 입력하세요')?.trim()
+    if (!resolvedName) {
       return
     }
-    fetch(`${API_BASE}/api/projects`, {
+
+    await fetch(`${API_BASE}/api/projects`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name: resolvedName }),
     })
       .then((r) => r.json())
       .then((project: ProjectItem) => {
         setSelectedProjectId(project.id)
         localStorage.setItem('projectId', project.id)
-        loadProjects()
       })
-      .catch(() => undefined)
+
+    await loadProjects()
   }
 
   return (
@@ -60,10 +62,23 @@ export default function App() {
       projects={projects}
       selectedProjectId={selectedProjectId}
       onSelectProject={handleSelectProject}
-      onCreateProject={handleCreateProject}
+      onCreateProject={() => {
+        void handleCreateProject()
+      }}
     >
       <Routes>
-        <Route path="/" element={<Navigate to="/wizard/step-1" replace />} />
+        <Route path="/" element={<Navigate to="/projects" replace />} />
+        <Route
+          path="/projects"
+          element={
+            <ProjectManagementPage
+              projects={projects}
+              selectedProjectId={selectedProjectId}
+              onSelectProject={handleSelectProject}
+              onCreateProject={(name) => handleCreateProject(name)}
+            />
+          }
+        />
         <Route
           path="/wizard/:stepId"
           element={<WizardStepPage selectedProjectId={selectedProjectId} onProjectUpdated={loadProjects} />}

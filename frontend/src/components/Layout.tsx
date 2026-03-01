@@ -45,6 +45,11 @@ export function Layout({
           ))}
         </div>
 
+        <p className="sidebar-group-title">Management</p>
+        <NavLink className={({ isActive }) => (isActive ? 'step-link active' : 'step-link')} to="/projects">
+          프로젝트 통합 관리
+        </NavLink>
+
         <p className="sidebar-group-title">Wizard</p>
         <nav>
           {steps.map((step, index) => (
