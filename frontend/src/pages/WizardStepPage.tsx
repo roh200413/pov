@@ -1,4 +1,4 @@
-import { ChangeEvent, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -156,7 +156,7 @@ export function WizardStepPage({ selectedProjectId, onProjectUpdated }: Props) {
       })
   }
 
-  const handleUploadFiles = (e: ChangeEvent<HTMLInputElement>) => {
+  const handleUploadFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!selectedDatasetId || !e.target.files?.length) return
     const formData = new FormData()
     Array.from(e.target.files).forEach((file) => formData.append('files', file))
