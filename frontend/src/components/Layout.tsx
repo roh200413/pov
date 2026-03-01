@@ -21,13 +21,17 @@ export function Layout({
   onSelectProject,
   onCreateProject,
 }: LayoutProps) {
+  const selectedProject = projects.find((project) => project.id === selectedProjectId)
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <h1>PoC AI Inference</h1>
+        <div className="brand">Runway PoC</div>
         <button type="button" className="small-button" onClick={onCreateProject}>
-          + 새 프로젝트
+          + New project
         </button>
+
+        <p className="sidebar-group-title">Projects</p>
         <div className="project-list">
           {projects.map((project) => (
             <button
@@ -40,6 +44,8 @@ export function Layout({
             </button>
           ))}
         </div>
+
+        <p className="sidebar-group-title">Wizard</p>
         <nav>
           {steps.map((step, index) => (
             <NavLink
@@ -52,7 +58,19 @@ export function Layout({
           ))}
         </nav>
       </aside>
-      <main className="content">{children}</main>
+
+      <main className="content">
+        <header className="topbar">
+          <div>
+            <p className="topbar-path">mlflow / model</p>
+            <h1>{selectedProject?.name ?? 'Select a project'}</h1>
+          </div>
+          <button type="button" className="topbar-action">
+            Add to model group
+          </button>
+        </header>
+        <div className="workspace-card">{children}</div>
+      </main>
     </div>
   )
 }
