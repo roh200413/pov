@@ -7,43 +7,21 @@ type LayoutProps = PropsWithChildren<{
   steps: string[]
   projects: ProjectItem[]
   selectedProjectId: string
-  onSelectProject: (projectId: string) => void
   onCreateProject: () => void
 }>
 
 const stepPaths = ['/wizard/step-1', '/wizard/step-2', '/wizard/step-3', '/wizard/step-4', '/wizard/step-5']
 
-export function Layout({
-  children,
-  steps,
-  projects,
-  selectedProjectId,
-  onSelectProject,
-  onCreateProject,
-}: LayoutProps) {
+export function Layout({ children, steps, projects, selectedProjectId, onCreateProject }: LayoutProps) {
   const selectedProject = projects.find((project) => project.id === selectedProjectId)
 
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="brand">Runway PoC</div>
+        <div className="brand">Axion PoC</div>
         <button type="button" className="small-button" onClick={onCreateProject}>
           + New project
         </button>
-
-        <p className="sidebar-group-title">Projects</p>
-        <div className="project-list">
-          {projects.map((project) => (
-            <button
-              key={project.id}
-              type="button"
-              className={project.id === selectedProjectId ? 'project-item active' : 'project-item'}
-              onClick={() => onSelectProject(project.id)}
-            >
-              {project.name}
-            </button>
-          ))}
-        </div>
 
         <p className="sidebar-group-title">Management</p>
         <NavLink className={({ isActive }) => (isActive ? 'step-link active' : 'step-link')} to="/projects">

@@ -42,13 +42,6 @@ textarea {
   margin-bottom: 12px;
 }
 
-.sidebar-group-title {
-  margin: 12px 0 8px;
-  color: #7b7f93;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
 
 .small-button {
   width: 100%;
@@ -58,29 +51,20 @@ textarea {
   padding: 8px 10px;
   border-radius: 8px;
   cursor: pointer;
+  margin-bottom: 8px;
 }
 
-.project-list {
-  display: grid;
-  gap: 6px;
+.sidebar-group-title {
+  margin: 12px 0 8px;
+  color: #7b7f93;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
-.project-item {
-  border: 1px solid #d4d9ea;
-  background: #fff;
-  color: #50556a;
-  padding: 6px 8px;
-  border-radius: 7px;
-  text-align: left;
-  cursor: pointer;
-  font-size: 12px;
-}
 
-.project-item.active {
-  border-color: #6d5efc;
-  color: #3a31ae;
-  background: #f2f0ff;
-}
+
+
 
 .step-link {
   display: block;
@@ -309,10 +293,15 @@ button:disabled {
 
 .project-create-form {
   display: grid;
-  grid-template-columns: 1fr auto;
   gap: 8px;
-  margin-bottom: 14px;
+  margin-top: 8px;
 }
+
+.project-card-create {
+  border-style: dashed;
+  background: #fbfbff;
+}
+
 
 .project-cards-grid {
   display: grid;

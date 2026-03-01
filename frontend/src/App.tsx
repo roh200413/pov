@@ -61,7 +61,6 @@ export default function App() {
       steps={steps}
       projects={projects}
       selectedProjectId={selectedProjectId}
-      onSelectProject={handleSelectProject}
       onCreateProject={() => {
         void handleCreateProject()
       }}

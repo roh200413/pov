@@ -24,6 +24,7 @@ export function ProjectManagementPage({ projects, selectedProjectId, onSelectPro
     if (!trimmed || isSubmitting) {
       return
     }
+
     setIsSubmitting(true)
     try {
       await onCreateProject(trimmed)
@@ -43,17 +44,6 @@ export function ProjectManagementPage({ projects, selectedProjectId, onSelectPro
         <div className="project-pill">총 {projects.length}개</div>
       </div>
 
-      <form className="project-create-form" onSubmit={handleSubmit}>
-        <input
-          value={projectName}
-          onChange={(e) => setProjectName(e.target.value)}
-          placeholder="새 프로젝트 이름을 입력하세요"
-        />
-        <button type="submit" disabled={!projectName.trim() || isSubmitting}>
-          {isSubmitting ? '생성 중...' : '프로젝트 생성'}
-        </button>
-      </form>
-
       <div className="project-cards-grid">
         {projects.map((project) => {
           const isActive = project.id === selectedProjectId
@@ -71,6 +61,21 @@ export function ProjectManagementPage({ projects, selectedProjectId, onSelectPro
             </article>
           )
         })}
+
+        <article className="project-card project-card-create">
+          <p className="project-card-label">Create</p>
+          <h3>새 프로젝트 만들기</h3>
+          <form className="project-create-form" onSubmit={handleSubmit}>
+            <input
+              value={projectName}
+              onChange={(e) => setProjectName(e.target.value)}
+              placeholder="프로젝트 이름"
+            />
+            <button type="submit" disabled={!projectName.trim() || isSubmitting}>
+              {isSubmitting ? '생성 중...' : '생성'}
+            </button>
+          </form>
+        </article>
       </div>
 
       {selectedProject && <p className="progress-text">현재 선택 프로젝트: {selectedProject.name}</p>}
